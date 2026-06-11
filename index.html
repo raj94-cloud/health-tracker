@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💪 Bhagya's Health Tracker</title>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdf2f8; margin: 0; padding: 16px; color: #333; }
+  h1 { text-align: center; color: #be185d; margin-bottom: 16px; font-size: 24px; }
+  .card { background: white; border-radius: 16px; padding: 16px; margin: 12px 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  label { display: block; margin: 12px 0 4px; font-weight: 600; color: #4b5563; font-size: 14px; }
+  input, select, textarea { width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 15px; box-sizing: border-box; }
+  input:focus, select:focus { outline: none; border-color: #f472b6; ring: 2px #fbcfe8; }
+  
+  .habit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .habit-item { display: flex; align-items: center; gap: 8px; background: #f9fafb; padding: 10px; border-radius: 10px; border: 1px solid #f3f4f6; }
+  .habit-item input { width: auto; }
+  
+  button { width: 100%; padding: 14px; background: #db2777; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; transition: background 0.2s; }
+  button:active { background: #be185d; transform: scale(0.98); }
+  
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; background: #fce7f3; padding: 4px; border-radius: 12px; }
+  .tab { flex: 1; padding: 10px; text-align: center; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; color: #9d174d; }
+  .tab.active { background: white; color: #db2777; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  
+  .msg { text-align: center; color: #059669; margin-top: 12px; font-weight: 600; height: 20px; }
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+  .stat-label { color: #6b7280; font-size: 14px; }
+  .stat-val { font-weight: 700; color: #db2777; font-size: 16px; }
+  
+  .history-item { border-left: 4px solid #f472b6; padding-left: 12px; margin-bottom: 16px; }
+  .history-date { font-weight: 700; font-size: 14px; color: #374151; }
+  .history-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; font-size: 12px; color: #6b7280; }
+  .tag { background: #fdf2f8; color: #db2777; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>💖 Bhagya's Health Tracker</h1>
+
+<div class="tabs">
+  <div class="tab active" id="tab-log" onclick="show('log')">📝 Log</div>
+  <div class="tab" id="tab-history" onclick="show('history')">📋 History</div>
+  <div class="tab" id="tab-stats" onclick="show('stats')">📊 Stats</div>
+</div>
+
+<!-- LOG SECTION -->
+<div id="log">
+  <div class="card">
+    <label>🍗 Protein Intake (grams)</label>
+    <input type="number" id="protein" placeholder="e.g. 120" min="0">
+
+    <label>🍎 Food Log</label>
+    <textarea id="food" rows="2" placeholder="What did you eat today?"></textarea>
+
+    <label>📝 Daily Notes</label>
+    <textarea id="notes" rows="2" placeholder="Any other notes about your day?"></textarea>
+
+    <label>📸 Upload Image</label>
+    <input type="file" id="imageInput" accept="image/*" onchange="previewImage()">
+    <div id="imagePreview" style="margin-top: 10px; display: none;">
+      <img id="preview" src="" style="max-width: 100%; border-radius: 10px;">
+    </div>
+    <input type="password" id="imgbbKey" placeholder="Paste ImgBB API Key here (to save space)" style="margin-top: 5px; font-size: 12px;">
+    <p style="font-size: 10px; color: #666; margin-top: 2px;">Get a free key at <a href="https://api.imgbb.com/" target="_blank">api.imgbb.com</a></p>
+
+    <label>💧 Water (glasses)</label>
+    <input type="number" id="water" placeholder="e.g. 8" min="0">
+
+    <label>😴 Sleep (hours)</label>
+    <input type="number" id="sleep" placeholder="e.g. 7" min="0">
+
+    <label>✅ Daily Habits</label>
+    <div class="habit-grid">
+      <div class="habit-item"><input type="checkbox" id="habit-workout"> 🏋️ Workout</div>
+      <div class="habit-item"><input type="checkbox" id="habit-meditation"> 🧘 Meditate</div>
+      <div class="habit-item"><input type="checkbox" id="habit-reading"> 📖 Reading</div>
+      <div class="habit-item"><input type="checkbox" id="habit-nojunk"> 🥗 No Junk</div>
+    </div>
+
+    <label>😊 Mood</label>
+    <select id="mood">
+      <option>😄 Great</option>
+      <option>🙂 Good</option>
+      <option>😐 Okay</option>
+      <option>😔 Tired</option>
+    </select>
+
+    <button onclick="save()">Save Daily Stats ✨</button>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+      <button onclick="syncToSheets()" style="background: #059669; margin-top: 0;">Sync to Sheets 📊</button>
+      <button onclick="syncToLocalServer()" style="background: #2563eb; margin-top: 0;">Local Sync 🏠</button>
+    </div>
+    <p class="msg" id="msg"></p>
+  </div>
+</div>
+
+<!-- HISTORY SECTION -->
+<div id="history" style="display:none">
+  <div id="history-list"></div>
+</div>
+
+<!-- STATS SECTION -->
+<div id="stats" style="display:none">
+  <div class="card">
+    <div id="stats-summary"></div>
+  </div>
+</div>
+
+<script>
+// Auto-load from local server on startup if possible
+window.onload = () => {
+  const savedKey = localStorage.getItem('imgbb_key');
+  if (savedKey) document.getElementById('imgbbKey').value = savedKey;
+
+  if (location.protocol !== 'file:') {
+    syncToLocalServer();
+  }
+};
+
+async function syncToLocalServer() {
+  const all = JSON.parse(localStorage.getItem('health_tracker') || '[]');
+  document.getElementById('msg').textContent = '🏠 Syncing locally...';
+  document.getElementById('msg').style.color = '#2563eb';
+
+  try {
+    await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(all)
+    });
+
+    const response = await fetch('/api/data');
+    const serverData = await response.json();
+    
+    localStorage.setItem('health_tracker', JSON.stringify(serverData));
+    
+    document.getElementById('msg').textContent = '✅ Local Sync Complete!';
+    document.getElementById('msg').style.color = '#059669';
+    renderHistory();
+    renderStats();
+  } catch (error) {
+    console.error('Local sync error:', error);
+    document.getElementById('msg').textContent = '❌ Local Server Not Found!';
+    document.getElementById('msg').style.color = '#dc2626';
+  }
+}
+
+// Replace this URL with your Google Apps Script Web App URL later
+const SHEETS_WEBAPP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+async function syncToSheets() {
+  const all = JSON.parse(localStorage.getItem('health_tracker') || '[]');
+  if (all.length === 0) {
+    document.getElementById('msg').textContent = '⚠️ No data to sync!';
+    return;
+  }
+
+  document.getElementById('msg').textContent = '⏳ Syncing...';
+  document.getElementById('msg').style.color = '#2563eb';
+
+  try {
+    const response = await fetch(SHEETS_WEBAPP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      cache: 'no-cache',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(all)
+    });
+    
+    document.getElementById('msg').textContent = '✅ Synced to Sheets!';
+    document.getElementById('msg').style.color = '#059669';
+  } catch (error) {
+    console.error('Sync error:', error);
+    document.getElementById('msg').textContent = '❌ Sync Failed. Check Console.';
+    document.getElementById('msg').style.color = '#dc2626';
+  }
+}
+
+function show(tab) {
+  ['log','history','stats'].forEach(t => {
+    document.getElementById(t).style.display = t===tab ? 'block' : 'none';
+    document.getElementById('tab-'+t).className = 'tab' + (t===tab ? ' active' : '');
+  });
+  if (tab==='history') renderHistory();
+  if (tab==='stats') renderStats();
+}
+
+function previewImage() {
+  const file = document.getElementById('imageInput').files[0];
+  const preview = document.getElementById('preview');
+  const previewContainer = document.getElementById('imagePreview');
+  const reader = new FileReader();
+
+  reader.onloadend = function () {
+    preview.src = reader.result;
+    previewContainer.style.display = 'block';
+  }
+
+  if (file) {
+    reader.readAsDataURL(file);
+  } else {
+    preview.src = "";
+    previewContainer.style.display = 'none';
+  }
+}
+
+async function save() {
+  const imagePreview = document.getElementById('preview').src;
+  const apiKey = document.getElementById('imgbbKey').value;
+  let imageUrl = null;
+
+  document.getElementById('msg').textContent = '⏳ Processing...';
+  
+  if (imagePreview.startsWith('data:image') && apiKey) {
+    document.getElementById('msg').textContent = '📸 Uploading Image...';
+    try {
+      const formData = new FormData();
+      formData.append('image', imagePreview.split(',')[1]);
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: 'POST',
+        body: formData
+      });
+      const result = await response.json();
+      if (result.success) {
+        imageUrl = result.data.url;
+      }
+    } catch (e) {
+      console.error('ImgBB Upload failed', e);
+    }
+  } else if (imagePreview.startsWith('data:image')) {
+    if (imagePreview.length < 500000) {
+      imageUrl = imagePreview;
+    } else {
+      alert("Image too large for local storage. Please add an ImgBB API key!");
+    }
+  }
+
+  const entry = {
+    date: new Date().toLocaleDateString('en-CA'),
+    displayDate: new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }),
+    person: 'Bhagya',
+    protein: Number(document.getElementById('protein').value) || 0,
+    food: document.getElementById('food').value,
+    notes: document.getElementById('notes').value,
+    image: imageUrl,
+    water: Number(document.getElementById('water').value) || 0,
+    sleep: Number(document.getElementById('sleep').value) || 0,
+    mood: document.getElementById('mood').value,
+    habits: {
+      workout: document.getElementById('habit-workout').checked,
+      meditation: document.getElementById('habit-meditation').checked,
+      reading: document.getElementById('habit-reading').checked,
+      nojunk: document.getElementById('habit-nojunk').checked
+    }
+  };
+
+  const all = JSON.parse(localStorage.getItem('health_tracker') || '[]');
+  const idx = all.findIndex(e => e.date===entry.date && e.person===entry.person);
+  if (idx >= 0) all[idx] = entry; else all.unshift(entry);
+  
+  try {
+    localStorage.setItem('health_tracker', JSON.stringify(all));
+    document.getElementById('msg').textContent = '✅ Saved Successfully!';
+    if (apiKey) localStorage.setItem('imgbb_key', apiKey);
+    document.getElementById('imageInput').value = '';
+    document.getElementById('preview').src = '';
+    document.getElementById('imagePreview').style.display = 'none';
+  } catch (e) {
+    console.error(e);
+    document.getElementById('msg').textContent = '❌ Storage Full! Use ImgBB Key.';
+    document.getElementById('msg').style.color = '#dc2626';
+  }
+  
+  setTimeout(() => {
+    document.getElementById('msg').textContent = '';
+    document.getElementById('msg').style.color = '#059669';
+  }, 3000);
+}
+
+function renderHistory() {
+  const all = JSON.parse(localStorage.getItem('health_tracker') || '[]');
+  const filtered = all.filter(e => e.person==='Bhagya');
+  const list = document.getElementById('history-list');
+  
+  if (!filtered.length) {
+    list.innerHTML='<div class="card">No logs yet. Go to Log tab!</div>';
+    return;
+  }
+  
+  list.innerHTML = filtered.map(e => `
+    <div class="card history-item">
+      <div class="history-date">${e.displayDate} <span style="float:right">${e.mood}</span></div>
+      <div style="margin-top:6px; font-size:14px;"><strong>Food:</strong> ${e.food || 'N/A'}</div>
+      ${e.notes ? `<div style="margin-top:6px; font-size:14px;"><strong>Notes:</strong> ${e.notes}</div>` : ''}
+      ${e.image ? `<div style="margin-top:10px;"><img src="${e.image}" style="max-width:100%; border-radius:8px;"></div>` : ''}
+      <div class="history-grid">
+        <span>🍗 ${e.protein}g Protein</span>
+        <span>💧 ${e.water} Water</span>
+        <span>😴 ${e.sleep}h Sleep</span>
+      </div>
+      <div style="margin-top:8px; display:flex; gap:4px; flex-wrap:wrap;">
+        ${e.habits.workout ? '<span class="tag">🏋️ Workout</span>' : ''}
+        ${e.habits.meditation ? '<span class="tag">🧘 Meditate</span>' : ''}
+        ${e.habits.reading ? '<span class="tag">📖 Reading</span>' : ''}
+        ${e.habits.nojunk ? '<span class="tag">🥗 No Junk</span>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderStats() {
+  const all = JSON.parse(localStorage.getItem('health_tracker') || '[]');
+  const bhagya = all.filter(e => e.person==='Bhagya');
+  
+  const getAvg = (arr, key) => arr.length ? (arr.reduce((s,e)=>s+e[key],0)/arr.length).toFixed(1) : 0;
+  
+  const el = document.getElementById('stats-summary');
+  el.innerHTML = `
+    <h3 style="color:#be185d">📊 Averages (Last 7 Logs)</h3>
+    <div class="stat-row"><span class="stat-label">Protein</span><span class="stat-val">${getAvg(bhagya.slice(0,7), 'protein')}g</span></div>
+    <div class="stat-row"><span class="stat-label">Water</span><span class="stat-val">${getAvg(bhagya.slice(0,7), 'water')}g</span></div>
+    <div class="stat-row"><span class="stat-label">Sleep</span><span class="stat-val">${getAvg(bhagya.slice(0,7), 'sleep')}h</span></div>
+  `;
+}
+</script>
+</body>
+</html>
